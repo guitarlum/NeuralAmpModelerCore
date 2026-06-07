@@ -57,15 +57,15 @@ void ContainerModel::process(NAM_SAMPLE** input, NAM_SAMPLE** output, const int 
 
 void ContainerModel::prewarm()
 {
-  for (auto& sm : _submodels)
-    sm.model->prewarm();
+  const size_t active_index = _active_index.load(std::memory_order_acquire);
+  _submodels[active_index].model->prewarm();
 }
 
 void ContainerModel::Reset(const double sampleRate, const int maxBufferSize)
 {
   DSP::Reset(sampleRate, maxBufferSize);
-  for (auto& sm : _submodels)
-    sm.model->Reset(sampleRate, maxBufferSize);
+  const size_t active_index = _active_index.load(std::memory_order_acquire);
+  _submodels[active_index].model->Reset(sampleRate, maxBufferSize);
 }
 
 void ContainerModel::SetSlimmableSize(const double val)
