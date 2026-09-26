@@ -66,6 +66,9 @@ public:
   ~A2FastModel() override = default;
 
   void process(NAM_SAMPLE** input, NAM_SAMPLE** output, int num_frames) override;
+  // VoLum: every layer and the head are causal convolutions; the prewarm length
+  // is their summed lookback.
+  int FeedForwardReceptiveField() override { return _prewarm_samples + 1; }
 
 protected:
   void SetMaxBufferSize(int maxBufferSize) override;

@@ -38,6 +38,8 @@ public:
   void prewarm() override;
   void Reset(const double sampleRate, const int maxBufferSize) override;
   void SetSlimmableSize(const double val) override;
+  // VoLum: only the active submodel runs.
+  int FeedForwardReceptiveField() override;
 
 protected:
   int PrewarmSamples() override { return 0; }

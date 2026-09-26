@@ -68,6 +68,12 @@ void ContainerModel::Reset(const double sampleRate, const int maxBufferSize)
   _submodels[active_index].model->Reset(sampleRate, maxBufferSize);
 }
 
+int ContainerModel::FeedForwardReceptiveField()
+{
+  const size_t active_index = _active_index.load(std::memory_order_acquire);
+  return _submodels[active_index].model->FeedForwardReceptiveField();
+}
+
 void ContainerModel::SetSlimmableSize(const double val)
 {
   size_t active_index = _submodels.size() - 1;

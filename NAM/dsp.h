@@ -79,6 +79,15 @@ public:
   /// \param output Output audio buffers. Same structure as input.
   /// \param num_frames Number of frames to process
   virtual void process(NAM_SAMPLE** input, NAM_SAMPLE** output, const int num_frames);
+
+  // VoLum: the number of input samples one output sample depends on, including
+  // itself, for a feed-forward model. After that many samples of one constant
+  // input the model's state no longer changes and its output is constant, so a
+  // caller may stop processing that input. 0 (the default) means never skip:
+  // recurrent (LSTM) models, and the generic WaveNet, whose Eigen products
+  // round a constant input differently at different block sizes.
+  virtual int FeedForwardReceptiveField() { return 0; }
+
   /// \brief Get the expected sample rate
   /// \return Expected sample rate in Hz (-1.0 if unknown)
   double GetExpectedSampleRate() const { return mExpectedSampleRate; };
