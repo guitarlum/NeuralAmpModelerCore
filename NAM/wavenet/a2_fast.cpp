@@ -595,7 +595,10 @@ void A2FastModel<Channels>::_layer_forward_k(Layer& L, const float* cond, int nu
     // Post-conv: bias, mixin, LeakyReLU, head_sum, 1x1 residual — all block ops.
     ztile.colwise() += conv_b_vec;
     ztile.noalias() += mixin_vec * cond_row; // rank-1 outer product
-    ztile = (ztile.array() < 0.0f).select(ztile.array() * kLeakySlope, ztile.array());
+    // VoLum: max(x, slope*x) equals the LeakyReLU select for slope in (0,1) on every finite
+    // value, +-0 and NaN, and vectorizes (Eigen's select evaluator does not). Only subnormals
+    // read under DAZ can differ, and the next op reads both results as zero.
+    ztile = ztile.cwiseMax(ztile * kLeakySlope);
     hsum_block += ztile;
     lin_block.noalias() += l1x1_mat * ztile; // 8x8 × 8xN GEMM
     lin_block.colwise() += l1x1_b_vec;
