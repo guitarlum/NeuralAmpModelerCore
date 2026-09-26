@@ -285,6 +285,19 @@ int next_pow2(int v)
     p <<= 1;
   return p;
 }
+
+  #if NAM_A2_RING_MODE == 1
+// VoLum: the tail [pow2_size, pow2_size + mbs) mirrors [0, mbs). A block only
+// writes ring columns [lo, hi), so re-mirror just their part inside [0, mbs)
+// instead of the whole tail every block.
+void refresh_tail_mirror(float* hist, int channels, int pow2_size, int mbs, int lo, int hi)
+{
+  hi = std::min(hi, mbs);
+  if (lo < hi)
+    std::memcpy(hist + static_cast<size_t>(pow2_size + lo) * channels, hist + static_cast<size_t>(lo) * channels,
+                static_cast<size_t>(hi - lo) * channels * sizeof(float));
+}
+  #endif
 } // namespace
 
 template <int Channels>
@@ -348,8 +361,8 @@ void A2FastModel<Channels>::_ring_write(Layer& L, int num_frames)
     std::memcpy(hist, src + static_cast<size_t>(first) * Channels,
                 static_cast<size_t>(num_frames - first) * Channels * sizeof(float));
   }
-  std::memcpy(
-    hist + static_cast<size_t>(L.pow2_size) * Channels, hist, static_cast<size_t>(mbs) * Channels * sizeof(float));
+  refresh_tail_mirror(hist, Channels, L.pow2_size, mbs, wp, wp + first);
+  refresh_tail_mirror(hist, Channels, L.pow2_size, mbs, 0, num_frames - first);
   L.write_pos = (wp + num_frames) & L.pow2_mask;
   #else
   if (L.write_pos + num_frames > L.history_cols)
@@ -380,8 +393,8 @@ void A2FastModel<Channels>::_head_ring_write(int num_frames)
     std::memcpy(hist, src + static_cast<size_t>(first) * Channels,
                 static_cast<size_t>(num_frames - first) * Channels * sizeof(float));
   }
-  std::memcpy(
-    hist + static_cast<size_t>(_head_pow2_size) * Channels, hist, static_cast<size_t>(mbs) * Channels * sizeof(float));
+  refresh_tail_mirror(hist, Channels, _head_pow2_size, mbs, wp, wp + first);
+  refresh_tail_mirror(hist, Channels, _head_pow2_size, mbs, 0, num_frames - first);
   _head_write_pos = (wp + num_frames) & _head_pow2_mask;
   #else
   const int keep = kHeadKernelSize - 1;
