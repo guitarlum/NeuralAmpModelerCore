@@ -385,7 +385,6 @@ template <int Channels>
 void A2FastModel<Channels>::_head_ring_write(int num_frames)
 {
   #if NAM_A2_RING_MODE == 1
-  const int mbs = GetMaxBufferSize();
   float* const hist = _head_history.data();
   const float* const src = _head_sum.data();
   const int wp = _head_write_pos;
@@ -396,8 +395,8 @@ void A2FastModel<Channels>::_head_ring_write(int num_frames)
     std::memcpy(hist, src + static_cast<size_t>(first) * Channels,
                 static_cast<size_t>(num_frames - first) * Channels * sizeof(float));
   }
-  refresh_tail_mirror(hist, Channels, _head_pow2_size, mbs, wp, wp + first);
-  refresh_tail_mirror(hist, Channels, _head_pow2_size, mbs, 0, num_frames - first);
+  // VoLum: no tail-mirror refresh here. _head_forward masks every column into
+  // [0, pow2), so the head never reads its tail mirror.
   _head_write_pos = (wp + num_frames) & _head_pow2_mask;
   #else
   const int keep = kHeadKernelSize - 1;
